@@ -164,5 +164,5 @@ Here is an overview of the key modules in the simulation:
 - **Energy Processing**: Processes energy data for simulation purposes.
 
 ## License
-This project is released under the MIT License.
+This project is released under the GPL 3.0 License.
 
