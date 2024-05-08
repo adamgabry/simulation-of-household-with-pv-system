@@ -1,0 +1,55 @@
+{
+    "panel_parameters": {
+        "current_config": {
+            "celltype": "monoSi",
+            "pmax": 390,
+            "v_mp": 36.49,
+            "i_mp": 10.69,
+            "v_oc": 43.75,
+            "i_sc": 11.39,
+            "alpha_sc": 0.0054672,
+            "beta_voc": -0.1225,
+            "gamma_pmax": -0.35,
+            "cells_in_series": 132,
+            "temp_ref": 25,
+            "price": 4000,
+            "_url_pannel" : "https://www.svet-svitidel.cz/ImgGalery/Img1/PORT_destination/Katalogov%C3%BD%20list/Ostatn%C3%AD/KP1011_CZ.pdf",
+            "_url_panel_holder" : "https://www.svet-svitidel.cz/ImgGalery/Img1/PORT_destination/Katalogov%C3%BD%20list/Ostatn%C3%AD/KP1011_CZ.pdf",
+            "_comment" : "price is set as 4000 CZK, because it is the price of the panel + holder, the price of the panel itself is 2500 CZK, while holder 1500, demonstrative."
+        },
+        "demo_config_1": {
+                "celltype": "polySi",
+                "pmax": 250,
+                "v_mp": 31.36,
+                "i_mp": 7.98,
+                "v_oc": 38.41,
+                "i_sc": 8.51,
+                "alpha_sc": 0.00072,
+                "beta_voc": -0.338,
+                "gamma_pmax": -0.475,
+                "cells_in_series": 60,
+                "temp_ref": 25,
+                "price": 4650,
+                "_comment" : "https://www.eshopelektronika.cz/detail/nejprodavanejsi/fotovoltaicky-panel-omp-250-w"
+        },  
+        "demo_config_2": {
+            "_comment": "This config was used for experiments, please if you want to change the panels for your simulation, rewrite current_config.\n",
+            "celltype": "polySi",
+            "pmax": 280,
+            "v_mp": 31.5,
+            "i_mp": 8.89,
+            "v_oc": 38.6,
+            "i_sc": 9.31,
+            "alpha_sc": 0.004655,
+            "beta_voc": -0.11966,
+            "gamma_pmax": -0.41,
+            "cells_in_series": 60,
+            "temp_ref": 25,
+            "price": 2950
+        }
+    },
+    "panel_degredation_yearly": {
+        "monoSi": 0.0055,
+        "polySi": 0.005
+    }
+}

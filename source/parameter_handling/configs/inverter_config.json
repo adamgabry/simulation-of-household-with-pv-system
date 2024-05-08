@@ -1,0 +1,117 @@
+{
+    "invertor_configs": [
+        {
+            "size": 12000,
+            "efficiency": 0.978,
+            "cost": 27900,
+            "default": false,
+            "hybrid": false,
+            "asymetric": false,
+            "_comment": "https://www.imobily.eu/mnic-napti-invertor-pro-solarni-panely-3-fazovy-foxess-t12-g3-wifi-modul-26188.html?gad_source=1 cited 1/5/2024"
+        },
+        {
+            "size":5000,
+            "efficiency": 0.978,
+            "cost": 23816,
+            "default": false,
+            "hybrid": false,
+            "asymetric": false,
+            "_comment": "https://www.mobler.cz/solax-x3-3-15k-mic-g2-wifi-3-0/ cited 1/5/2024"
+        },
+        {
+            "size":8000,
+            "efficiency": 0.978,
+            "cost": 26590,
+            "default": false,
+            "hybrid": false,
+            "asymetric": false,
+            "_comment": "https://www.mobler.cz/solax-x3-3-15k-mic-g2-wifi-3-0/ cited 1/5/2024"
+        },
+        {
+            "size":10000,
+            "efficiency": 0.978,
+            "cost": 28452,
+            "default": false,
+            "hybrid": false,
+            "asymetric": false,
+            "_comment": "https://www.mobler.cz/solax-x3-3-15k-mic-g2-wifi-3-0/ cited 1/5/2024"
+        },
+        {
+            "size": 15000,
+            "efficiency": 0.975,
+            "cost": 72000,
+            "default": false,
+            "hybrid": true,
+            "battery_loader_efficiency" : 0.975,
+            "asymetric": false,
+            "max_single_phase_ratio": 0.5,
+            "_comment": "https://www.mobler.cz/menic-hybridni-3f--goodwe-15-30kw-gw15-30k-et/ cited 1/5/2024"
+        },
+        {
+            "size": 10000,
+            "efficiency": 0.97,
+            "cost": 65049,
+            "default": true,
+            "hybrid": true,
+            "battery_loader_efficiency" : 0.97,
+            "asymetric": true,
+            "max_single_phase_ratio": 0.5,
+            "_comment": "https://www.mobler.cz/menic-10kw-hybridni-3f-lemax-deye-sun10k-sg04lp3/?variantId=260565&gad_source=1 cited 1/5/2024"
+        },
+        {
+            "size": 12000,
+            "efficiency": 0.97,
+            "cost": 75891,
+            "default": false,
+            "hybrid": true,
+            "battery_loader_efficiency" : 0.97,
+            "asymetric": true,
+            "max_single_phase_ratio": 0.5,
+            "_comment": "https://www.mobler.cz/menic-10kw-hybridni-3f-lemax-deye-sun10k-sg04lp3/?variantId=260565&gad_source=1 cited 1/5/2024"
+        },
+        {
+            "size": 4000,
+            "efficiency": 0.975,
+            "cost": 40500,
+            "default": false,
+            "hybrid": true,
+            "battery_loader_efficiency" : 0.975,
+            "asymetric": true,
+            "max_single_phase_ratio": 0.5,
+            "_comment": "https://www.mobler.cz/menic-growatt-sph-10000tl3-bh-up-10-kw/ cited 1/5/2024"
+        },
+        {
+            "size": 6000,
+            "efficiency": 0.975,
+            "cost": 42251,
+            "default": false,
+            "hybrid": true,
+            "battery_loader_efficiency" : 0.975,
+            "asymetric": true,
+            "max_single_phase_ratio": 0.5,
+            "_comment": "https://www.mobler.cz/menic-growatt-sph-10000tl3-bh-up-10-kw/ cited 1/5/2024"
+        },
+        {
+            "size": 8000,
+            "efficiency": 0.975,
+            "cost": 45263,
+            "default": false,
+            "hybrid": true,
+            "battery_loader_efficiency" : 0.975,
+            "asymetric": true,
+            "max_single_phase_ratio": 0.5,
+            "_comment": "https://www.mobler.cz/menic-growatt-sph-10000tl3-bh-up-10-kw/?variantId=259869&gad_source=1 cited 1/5/2024"
+        },
+        {
+            "size": 10000,
+            "efficiency": 0.975,
+            "cost": 48718,
+            "default": false,
+            "hybrid": true,
+            "battery_loader_efficiency" : 0.975,
+            "asymetric": true,
+            "max_single_phase_ratio": 0.5,
+            "_comment": "https://www.mobler.cz/menic-growatt-sph-10000tl3-bh-up-10-kw/?variantId=259869&gad_source=1 cited 1/5/2024"
+        }
+    ]
+}

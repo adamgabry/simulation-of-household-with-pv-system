@@ -1,0 +1,8 @@
+{
+    "prizing_energy_and_cost": {
+        "selling_cost_to_distributor_per_kwh": 1.1,
+        "buying_cost_from_distributor_per_kwh": 8.12,
+        "installation_cost": 60000,
+        "annual_expenses": 6000
+    }
+}

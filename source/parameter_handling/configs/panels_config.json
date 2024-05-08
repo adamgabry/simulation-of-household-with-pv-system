@@ -1,0 +1,4 @@
+[
+    {"surface_tilt": 45, "surface_azimuth": 180, "strings": 2, "modules_per_string": 8, "min_strings": 1 ,"max_strings": 3,"min_modules": 4, "max_modules": 10},
+    {"surface_tilt": 45, "surface_azimuth": 0, "strings": 1, "modules_per_string": 4, "min_strings": 0 ,"max_strings": 2,"min_modules": 4, "max_modules": 10}
+]

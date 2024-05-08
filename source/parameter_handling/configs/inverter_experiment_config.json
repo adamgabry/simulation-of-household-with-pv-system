@@ -1,0 +1,42 @@
+{
+    "invertor_configs": [
+        {
+            "size": 12000,
+            "efficiency": 0.975,
+            "cost": 35000,
+            "default": false,
+            "hybrid": true,
+            "battery_loader_efficiency" : 0.985,
+            "asymetric": true
+        },
+        {
+            "size": 20000,
+            "efficiency": 0.975,
+            "cost": 50000,
+            "default": false,
+            "hybrid": false,
+            "asymetric": true,
+            "max_single_phase_ratio": 0.5 
+        },
+        {
+            "size": 5500,
+            "efficiency": 0.975,
+            "cost": 60000,
+            "default": true,
+            "hybrid": true,
+            "battery_loader_efficiency" : 0.975,
+            "asymetric": true,
+            "max_single_phase_ratio": 0.5
+        },
+        {
+            "size": 5500,
+            "efficiency": 0.942,
+            "cost": 60000,
+            "default": false,
+            "hybrid": false,
+            "asymetric": true,
+            "_comment": "https://1alphasolar.cz/produkt-320-kostal-piko-5-5-eu---nsr---dcs,-3phase-5500-w-grid-inverter---transformerless cited 1/5/2024"
+        }
+    ]
+}
+

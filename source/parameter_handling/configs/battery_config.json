@@ -1,0 +1,62 @@
+{
+    "battery_info": {
+        "LiFePO4": {
+            "min_capacity": 0.2,
+            "max_capacity": 1,
+            "lifespan_years": 16,
+            "cost_per_kWh_capacity": 10000,
+            "annual_degradation": 0.015
+        },
+        "Plumbum": {
+            "min_capacity": 0.5,
+            "max_capacity": 1,
+            "lifespan_years": 5,
+            "cost_per_kWh_capacity": 5000,
+            "annual_degradation": 0.05
+        }
+    },
+    "battery_configs": [
+        {
+            "type": "LiFePO4",
+            "size": 4800,
+            "cost": 38500,
+            "default": false,
+            "_comment": "https://www.nejpanely.cz/solarni-baterie-4-8kwh-48v-100ah-lifepo4-us5000-pylontech/?gad_source=1 cited 2023-04-26"
+        },
+        {
+            "type": "LiFePO4",
+            "size": 9600,
+            "cost": 61900,
+            "default" : false,
+            "_comment": "https://www.e-pohon.cz/akumulator-lifepo4-48v-200ah-10-kwh-greflow-wall-mount-200a.html"
+        },
+        {
+            "type": "LiFePO4",
+            "size": 20000,
+            "cost": 250000,
+            "default" : false,
+            "_comment": "https://www.rozsvitimesvet.cz/baterie/20kwh-system-lithiove-baterie--204v--pro-8-12kw-invertor/ cited 2023-04-26"
+        },
+        {
+            "type": "Plumbum",
+            "size": 9600,
+            "cost": 36000,
+            "default" : true,
+            "_comment": "https://www.tipa.eu/cz/baterie-agm-12v-200ah-solarfam-pro-solary/d-244759/?gad_source=1 cited 2023-04-26"
+        },
+        {
+            "type": "Plumbum",
+            "size": 4800,
+            "cost": 36000,
+            "default" : false,
+            "_comment": "https://www.tipa.eu/cz/baterie-agm-12v-200ah-solarfam-pro-solary/d-244759/?gad_source=1 cited 2023-04-26"
+        },
+        {
+            "type": "Plumbum",
+            "size": 2400,
+            "cost": 20000,
+            "default" : false,
+            "_comment": "https://www.bch-battery.cz/Baterie-PylonTech-US2000C-48V-2-4kWh-50Ah-d2515.htm cited 2023-04-26"
+        }
+    ]
+}

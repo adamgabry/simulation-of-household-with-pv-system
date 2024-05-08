@@ -1,0 +1,14 @@
+{
+"database_config": {
+    "consumption_db_path": "C:\\Users\\adamg\\Desktop\\data_BP\\home-assistant_v2_2023_10_27.db",
+    "_comment": "\"generation_db_path:\"C:\\Users\\adamg\\Desktop\\Weather",
+    "WeatherUnderground_path": null,
+    "get_new_consumption_data": false,
+    "sensor_ids": {
+      "first_phase": 1,
+      "second_phase": 17,
+      "third_phase": 18
+    },
+    "data_in_Watts": false
+  }
+}
