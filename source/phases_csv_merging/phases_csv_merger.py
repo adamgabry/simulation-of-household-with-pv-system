@@ -1,3 +1,8 @@
+"""
+@Author: Adam Gabrys
+@Description: A class that provides methods for merging and sorting multiple CSV files.
+"""
+
 import pandas as pd
 
 class CSVMerger:

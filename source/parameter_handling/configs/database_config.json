@@ -1,7 +1,6 @@
 {
 "database_config": {
-    "consumption_db_path": "C:\\Users\\adamg\\Desktop\\data_BP\\home-assistant_v2_2023_10_27.db",
-    "_comment": "\"generation_db_path:\"C:\\Users\\adamg\\Desktop\\Weather",
+    "consumption_db_path": null,
     "WeatherUnderground_path": null,
     "get_new_consumption_data": false,
     "sensor_ids": {
@@ -9,6 +8,7 @@
       "second_phase": 17,
       "third_phase": 18
     },
-    "data_in_Watts": false
+    "data_in_Watts": false,
+    "db_query": "SELECT state_id, attributes_id, state, last_updated_ts FROM states WHERE attributes_id IN ? ORDER BY state_id;"
   }
 }

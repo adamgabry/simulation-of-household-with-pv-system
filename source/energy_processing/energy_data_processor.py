@@ -72,7 +72,7 @@ class EnergyDataProcessor:
         else:
             self.battery_loader_efficiency = battery_loader_efficiency    
         
-        self.battery_current_storage = 0.7 * self.battery_capacity
+        self.battery_current_storage = 0.7 * self.battery_capacity # Start with 70% of the battery capacity
         self.total_consumed_energy_with_PV = 0
         self.energy_sold = 0
         self.total_consumed_energy_without_PV = 0
@@ -145,18 +145,7 @@ class EnergyDataProcessor:
             """
             return self.total_consumed_energy_with_PV, self.total_consumed_energy_without_PV, self.energy_sold, self.wasted_excess_energy
 
-    def get_optimal_invertor_size(self):
-            """
-            Calculate the optimal size of the inverter based on the maximum demand of the phases.
-
-            Returns:
-                float: The optimal size of the inverter.
-            """
-            max_demand = self.phases_data_frame.apply(lambda row: row['phase_1'] + row['phase_2'] + row['phase_3'], axis=1).max()
-            invertor_size = max_demand * 1.25  # Add a 25% buffer based on the studies
-            return invertor_size
-
-    def statistics_show(self, with_battery=True):                
+    def statistics_show(self, with_battery=True, off_grid = False):	                
         """
         Display statistics related to energy consumption and production.
 
@@ -175,26 +164,31 @@ class EnergyDataProcessor:
         - Battery Storage vs Energy Used from Grid
         - Wasted Excess Energy per Phase (accumulated)
         
-
         Parameters:
         - with_battery (bool): Whether to include battery storage data in the plot. Default is True.
         """
-        print("Uvedene castky jsou za 1 rok")
-        print(f"Celkova rocni spotreba energie bez PV: {self.total_consumed_energy_without_PV/1000} kWh")
-        print(f"Prodana energie rocne: {self.energy_sold/1000} kWh")
-        print(f"Celkova rocni spotreba energie z verejne site s PV: {self.total_consumed_energy_with_PV/1000} kWh")
-        print("Usetrene penize (czk) rocne: ", ((self.total_consumed_energy_without_PV - self.total_consumed_energy_with_PV)/1000 * self.cost_per_kWh + (self.energy_sold/1000 * self.selling_cost_per_kWh)))
+        print("Values are set for the given computed time-array:")
+        print(f"Total consumption from grid with use of the PV system: {self.total_consumed_energy_without_PV/1000} kWh")
+        print(f"Energy sold yearly: {self.energy_sold/1000} kWh")
+        print(f"Total consumption from grid with use of the PV system: {self.total_consumed_energy_with_PV/1000} kWh")
+        print("Money saved: ", ((self.total_consumed_energy_without_PV - self.total_consumed_energy_with_PV)/1000 * self.cost_per_kWh + (self.energy_sold/1000 * self.selling_cost_per_kWh)))
 
         # Plot the data
-        plt.figure(figsize=(14, 10))
+        plt.figure(figsize=(16, 12))
 
         # Subplot 1: Energy Used from Grid vs Consumed Energy
         ax1 = plt.subplot(3, 1, 1)
         timestamps, energy_values = zip(*self.total_energy_used_from_grid_list)
         energy_values = [value / 1000 for value in energy_values]
-        ax1.plot(timestamps, energy_values, label='Energie použitá z veřejné sítě s PV')
-        ax1.set_ylabel('Energie (kWh)') 
-        ax1.set_title('Energie použitá z veřejné sítě s PV') 
+        if off_grid:
+            ax1.plot(timestamps, energy_values, label='Grid Energy Equivalent Required to Support the PV System in Off-grid Mode')
+        else:
+            ax1.plot(timestamps, energy_values, label='Energy used from grid with the use of PV system')
+        ax1.set_ylabel('Energy (kWh)') 
+        if off_grid:
+            ax1.set_title('Energy consumption not covered from PV at Off-Grid system', fontsize=16)
+        else:
+            ax1.set_title('Energy Used from grid with PV system', fontsize=16) 
         ax1.legend(loc='upper right')  
 
         # Subplot 2: Battery Storage
@@ -202,33 +196,35 @@ class EnergyDataProcessor:
         if with_battery:
             try:
                 timestamps, battery_values = zip(*self.battery_storage_list)
-                ax2.plot(timestamps, battery_values, label='Stav baterie')
+                ax2.plot(timestamps, battery_values, label='Battery state of charge')
                 ax2.legend(loc='upper right')
             except ValueError:
                 print('No battery data to plot.')
-        ax2.set_ylabel('Energie (Wh)')
-        ax2.set_title('Stav nabití baterie')
+        ax2.set_ylabel('Energy (Wh)')
+        ax2.set_title('')
 
         # Subplot 3: Wasted Excess Energy per Phase (accumulated)
         plt.subplot(3, 1, 3)
         plt.plot(range(len(self.wasted_excess_energy_phase[0])), self.wasted_excess_energy_phase[0], label='Phase 1')
         plt.plot(range(len(self.wasted_excess_energy_phase[1])), self.wasted_excess_energy_phase[1], label='Phase 2')
         plt.plot(range(len(self.wasted_excess_energy_phase[2])), self.wasted_excess_energy_phase[2], label='Phase 3')
-        plt.xlabel('Time')
+        plt.xlabel('Time', fontsize=14)
         plt.ylabel('Wasted generated energy (kWh)')
-        plt.title('Accumulated Wasted Excess Energy per Phase, that was already cut by inverter inverter threshold')
+        plt.title('Accumulated Wasted Excess Energy per Phase, that was already cut by inverter inverter threshold', fontsize=16)
         plt.legend(loc='upper right')
+
+        # Adjust the spacing between subplots
+        plt.subplots_adjust(hspace=0.5)
+
         plt.show()
 
-        #plt.figure(figsize=(10, 6))
-        #plt.plot(self.wasted_excess_energy_list, label='Wasted Excess Energy')
-        #plt.xlabel('Time')
-        #plt.ylabel('Wasted Energy (W)')
-        #plt.title('Wasted Excess Energy')
-        #plt.legend()
-        #plt.show()
-
     def plot_energy_delta(self):
+        """
+        Plots the power delta for each phase over time.
+
+        Returns:
+            None
+        """
         linestyles = ['-', '--', '-.']
 
         # Plot power delta for each phase
@@ -242,7 +238,7 @@ class EnergyDataProcessor:
 
     def demo_plot_battery_state(self):
         """
-        Plot the battery storage status over time for September.
+        Plot the battery storage status over time for the entire year.
 
         This function requires that the battery data has been accumulated.
 
@@ -254,6 +250,9 @@ class EnergyDataProcessor:
         Returns:
         None
         """
+        if not self.with_battery:
+            return
+        
         plt.figure(figsize=(8, 4))
 
         # Increase the font size
@@ -267,30 +266,23 @@ class EnergyDataProcessor:
                 # Convert to pandas Series for easy filtering
                 battery_series = pd.Series(battery_values, index=timestamps)
 
-                # Filter for only September data
-                september_battery_series = battery_series[battery_series.index.month == 9]
-
-                plt.plot(september_battery_series.index, september_battery_series.values, label='Stav baterie')
+                plt.plot(battery_series.index, battery_series.values, label='Battery Status')
                 plt.legend(loc='upper right')
             except ValueError:
-                print('Žádná data o baterii k vykreslení.')
-            plt.xlabel('Čas')
-            plt.ylabel('Energie (Wh)')
-            plt.title('Stav nabití baterie')
+                print('No battery data available for plotting.')
+            plt.xlabel('Time')
+            plt.ylabel('Energy (Wh)')
+            plt.title('Battery Charge Status')
 
             # Format the x-axis to only show the month and day
             plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
 
-            # Set x-axis limits to end on September 30th
-            plt.gca().set_xlim([pd.Timestamp(september_battery_series.index.year[0], 9, 1), pd.Timestamp(september_battery_series.index.year[0], 9, 30)])
-
             plt.tight_layout()
         else:
-            print("Žádná data o baterii nejsou k dispozici.")
+            print("No battery data available.")
         plt.show()
         
     def plot_generated_power_per_phase_allocation(self):
-        linestyles = ['-', '--', '-.']  # different line styles for different phases
         linestyles = ['-', '--', '-.']  # different line styles for different phases
 
         # Create a single plot
@@ -299,13 +291,13 @@ class EnergyDataProcessor:
         # Plot generated power for each phase
         for phase in range(1, self.phases_count + 1):
             ax.plot(self.energy_data_df['timestamp'], self.energy_data_df[f'power_generated_phase_{phase}'],
-                    label=f'Přidělený výkon pro fázi_{phase}', linestyle=linestyles[(phase - 1) % len(linestyles)])
+                    label=f'Allocated power for phase_{phase}', linestyle=linestyles[(phase - 1) % len(linestyles)])
         if self.asymetric_inverter:
-            ax.set_title('Generovaný výkon rozdělený do jednotlivých fází s ASYMETRICKÝM střídačem', fontsize=16)
+            ax.set_title('Generated power allocated to individual phases with ASYMMETRIC inverter', fontsize=16)
         else:
-            ax.set_title('Generovaný výkon rozdělený do jednotlivých fází se SYMETRICKÝM střídačem', fontsize=16)
-        ax.set_ylabel('Výkon (W)', fontsize=14)
-        ax.set_xlabel('Čas', fontsize=14)
+            ax.set_title('Generated power allocated to individual phases with SYMMETRIC inverter', fontsize=16)
+        ax.set_ylabel('Power (W)', fontsize=14)
+        ax.set_xlabel('Time', fontsize=14)
         ax.legend(loc='upper right')
 
         plt.show()
@@ -337,35 +329,31 @@ class EnergyDataProcessor:
 
             linestyles = ['-', '--', '-.']  # different line styles for different phases
 
-            # Filter the DataFrame to only include rows where the timestamp is in September
-            # NOTE uncomment when wanting to plot only September/any month data
-            # self.energy_data_df = self.energy_data_df[self.energy_data_df['timestamp'].dt.month == 9]
-
             # Plot power needs for each phase
             ax1 = plt.subplot(num_of_plots, 1, 1)
             for phase in range(1, self.phases_count + 1):
                 ax1.plot(self.energy_data_df['timestamp'], self.energy_data_df[f'power_need_phase_{phase}'],
-                        label=f'Výkonová spotřeba fáze {phase}', linestyle=linestyles[(phase - 1) % len(linestyles)])
-            ax1.set_title('Výkonová potřeba jednotlivých fází', fontsize=14)
-            ax1.set_ylabel('Výkon (W)', fontsize=12)
+                        label=f'Power consumption phase {phase}', linestyle=linestyles[(phase - 1) % len(linestyles)])
+            ax1.set_title('Power need for each phase', fontsize=14)
+            ax1.set_ylabel('Power (W)', fontsize=12)
             ax1.legend(loc='upper right')
 
             # Plot power delta for each phase
             ax2 = plt.subplot(num_of_plots, 1, 2)
             for phase in range(1, self.phases_count + 1):
                 ax2.plot(self.energy_data_df['timestamp'], self.energy_data_df[f'power_delta_phase_{phase}'],
-                        label=f'Rozdíl na fázi {phase} ', linestyle=linestyles[(phase - 1) % len(linestyles)])
-            ax2.set_title('Rozdíl generovaného a spotřebovaného výkonu na fázi', fontsize=14)
-            ax2.set_ylabel('Výkon (W)', fontsize=12)
+                        label=f'Difference on phase {phase} ', linestyle=linestyles[(phase - 1) % len(linestyles)])
+            ax2.set_title('Difference between generated and consumed power per phase', fontsize=14)
+            ax2.set_ylabel('Power (W)', fontsize=12)
             ax2.legend(loc='upper right')
 
             # Plot generated power for each phase
             ax3 = plt.subplot(num_of_plots, 1, 3)
             for phase in range(1, self.phases_count + 1):
                 ax3.plot(self.energy_data_df['timestamp'], self.energy_data_df[f'power_generated_phase_{phase}'],
-                        label=f'Generovaný výkon dodaný fázi {phase}', linestyle=linestyles[(phase - 1) % len(linestyles)])
-            ax3.set_title('Generovaný výkon rozdělený jednotlivým fázím s ASYMETRICKÝM střídačem', fontsize=14)
-            ax3.set_ylabel('Výkon (W)', fontsize=12)   
+                        label=f'Generated power delivered to phase {phase}', linestyle=linestyles[(phase - 1) % len(linestyles)])
+            ax3.set_title('Generated power distributed to each phase with ASYMMETRIC inverter', fontsize=14)
+            ax3.set_ylabel('Power (W)', fontsize=12)   
             ax3.legend(loc='upper right')
 
             # Plot battery storage status if applicable
@@ -373,15 +361,15 @@ class EnergyDataProcessor:
                 ax4 = plt.subplot(4, 1, 4)
                 try:
                     timestamps, battery_values = zip(*self.battery_storage_list)  # This unpacks the list of tuples
-                    ax4.plot(timestamps, battery_values, label='Stav nabití baterie')
+                    ax4.plot(timestamps, battery_values, label='Battery charge status')
                     ax4.legend(loc='upper right')
                 except ValueError:
                     print('No battery data to plot.')
-                ax4.set_xlabel('Čas')
-                ax4.set_ylabel('DC energie (Wh)', fontsize=12)
-                ax4.set_title('Stav nabití baterie', fontsize=14)
+                ax4.set_xlabel('Time')
+                ax4.set_ylabel('DC Energy (Wh)', fontsize=12)
+                ax4.set_title('Battery charge status', fontsize=14)
 
-                # Format the x-axis to only show the month and day
+            # Format the x-axis to only show the month and day
             ax1.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
             ax2.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
             ax3.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
@@ -431,7 +419,7 @@ class EnergyDataProcessor:
         plt.tight_layout()  # Adjust the layout to make sure everything fits without overlap
         plt.show()
 
-    def plot_monthly_and_hourly_consumption(self, hours_only=False, months_only=False):
+    def plot_monthly_and_hourly_consumption(self, hours_only=False, months_only=False, czech=False):
         """
         Plots the monthly and hourly energy consumption with and without PV.
 
@@ -450,8 +438,6 @@ class EnergyDataProcessor:
 
         df.set_index('timestamp', inplace=True)
 
-        czech = True
-
         if not hours_only and not months_only:
             number_of_plots = 2
         else:
@@ -464,9 +450,9 @@ class EnergyDataProcessor:
             if not czech:
                 plt.plot(monthly_data.index, monthly_data['consumed_with_PV'], label='Energy Consumed with PV', marker='o')
                 plt.plot(monthly_data.index, monthly_data['consumed_without_PV'], label='Energy Consumed without PV', marker='o')
-                plt.title('Monthly Energy Consumption')
+                plt.title('Monthly Energy Consumption', fontsize=16)
                 plt.xlabel('Month')
-                plt.ylabel('Energy (kWh)')
+                plt.ylabel('Energy (kWh)', fontsize=14)
                 plt.tick_params(axis='both', which='major', labelsize=12)
             else:
                 plt.plot(monthly_data.index, monthly_data['consumed_with_PV'], label='Spotřeba z veřejné sítě s FVE', marker='o')
@@ -481,16 +467,16 @@ class EnergyDataProcessor:
             hourly_sum = df.groupby(df.index.hour).sum()/1000 # Convert to kWh
             plt.subplot(number_of_plots, 1, number_of_plots)
             if not czech:
-                plt.plot(hourly_sum.index, hourly_sum['consumed_with_PV'], label='Energy Consumed with PV', marker='o')
-                plt.plot(hourly_sum.index, hourly_sum['consumed_without_PV'], label='Energy Consumed without PV', marker='o')
-                plt.title('Hourly Energy Consumption')
+                plt.plot(hourly_sum.index, hourly_sum['consumed_with_PV'], label='Energy Consumed with PV system', marker='o')
+                plt.plot(hourly_sum.index, hourly_sum['consumed_without_PV'], label='Energy Consumed without PV system', marker='o')
+                plt.title('Yearly energy consumption in hours of the day')
                 plt.xlabel('Time')
                 plt.ylabel('Energy (kWh)')
                 plt.tick_params(axis='both', which='major', labelsize=12)
             else:
-                plt.plot(hourly_sum.index, hourly_sum['consumed_with_PV'], label='Spotřeba z veřejné sítě s FVE s baterií', marker='o')
-                plt.plot(hourly_sum.index, hourly_sum['consumed_without_PV'], label='Spotřeba z veřejné sítě bez FVE s baterií', marker='o')
-                plt.title('Spotřeba energie z veřejné sítě podle hodin dne', fontsize=16)
+                plt.plot(hourly_sum.index, hourly_sum['consumed_with_PV'], label='Spotřeba z veřejné sítě s FVE', marker='o')
+                plt.plot(hourly_sum.index, hourly_sum['consumed_without_PV'], label='Spotřeba z veřejné sítě bez FVE', marker='o')
+                plt.title('Roční spotřeba energie z veřejné sítě rozdělena podle hodin dne', fontsize=16)
                 plt.xlabel('Hodiny dne', fontsize=14)
                 plt.ylabel('Energie (kWh)', fontsize=14)
                 plt.tick_params(axis='both', which='major', labelsize=12)
@@ -1034,7 +1020,6 @@ class EnergyDataProcessor:
 
         self.energy_data_df = pd.DataFrame(self.data_to_plot)
 
-    # Method for calculating total blackout duration per day
     def total_blackout_duration_per_day(self):
         """
         Calculate the total blackout time duration per day. Used in the plot_blackout_duration method.
@@ -1051,7 +1036,6 @@ class EnergyDataProcessor:
         total_duration_per_day = df.groupby('date')['duration'].sum()
         return total_duration_per_day
 
-    # Method for counting blackout days
     def blackout_days_count(self):
         """
         Calculates the number of unique days when blackouts occurred.
@@ -1102,9 +1086,9 @@ class EnergyDataProcessor:
         plt.figure(figsize=(10, 6))
         plot_df['duration_hours'].plot(kind='bar', color='blue', alpha=0.8)
 
-        plt.title('Trvání výpadků elektřiny za jednotlivé dny (v hodinách)', fontsize=16)
-        plt.xlabel('Měsíc', fontsize=14)
-        plt.ylabel('Trvání výpadků (Hodiny)', fontsize=14)
+        plt.title('Duration of Power Outages per Day (in hours)', fontsize=16)
+        plt.xlabel('Month', fontsize=14)
+        plt.ylabel('Duration of Outages (Hours)', fontsize=14)
 
         # Set x-axis major formatter to show only month names
         plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%m'))
@@ -1322,7 +1306,7 @@ class EnergyDataProcessor:
 
     def processing_records_with_battery(self, phases_count=3, asymetric_inverter = False,max_single_phase_ratio=0.5, selling_enabled=False, off_grid=False):
         """
-        Process the off-grid energy generation and consumption data.
+        For methods with battery. Processing and synchronizing consumption and generation data for all records.
 
         Args:
             selling_enabled (bool, optional): Flag indicating whether selling excess energy is enabled. Defaults to True.
@@ -1460,643 +1444,3 @@ class EnergyDataProcessor:
         self.energy_data_df = pd.DataFrame(self.data_to_plot)
         if off_grid:
             self.blackout_data_df = pd.DataFrame(self.blackout_data)
-
-    ######## UNUSED METHODS ########
-
-    def off_grid_energy_processing_new(self, phases_count=3, asymetric_inverter = False,max_single_phase_ratio=0.5):
-        """
-        Process the off-grid energy generation and consumption data.
-
-        Args:
-            phases_count (int): The number of phases in the system. Defaults to 3.
-
-        Returns:
-            None
-        """
-        self.phases_count = phases_count
-    
-        # Define battery parameters
-        battery_min_capacity, battery_max_capacity = self.set_battery_operational_range()
-
-        self.data_to_plot = {'timestamp': [],
-        **{f'power_generated_phase_{i}': [] for i in range(1, phases_count + 1)},
-        **{f'power_need_phase_{i}': [] for i in range(1, phases_count + 1)},
-        **{f'power_delta_phase_{i}': [] for i in range(1, phases_count + 1)},
-            'power_need_all_phases': []}
-        
-        self.blackout_data = {'timestamp_start': [], 'timestamp_end': [], 'duration': []}
-        self.blackout_is_already = False
-        self.blackout_start = None
-
-        row_iterator = self.phases_data_frame.iterrows()
-
-        last_record_of_previous_hour = None
-        previous_timestamp = None
-        
-        for index, current_generated_power in self.dc_generation_df.items():
-            # Extract the month, day, and hour from the generation line
-            current_hour = (index.strftime('%m-%d'), index.strftime('%H'))
-
-            """
-            Limiting the generated power to the invertor nominal threshold.
-            """
-            current_generated_power, cant_convert_from_battery = self.limit_power_to_invertor_threshold(current_generated_power, with_battery=True)
-
-            # setting previous_timestamp as first record of the next hour
-            # then when jumping to the cycle we already have set previous timestamp and current timestamp
-            # based on that we can compute the time delta (interval) of the time, the power was exerting
-            # and from that get the energy = time * power
-
-            if previous_timestamp is None: # if we are at the beginning of the data
-                try:
-                    previous_timestamp, row = next(row_iterator)
-                except StopIteration:
-                    break
-
-            consumption_time = (previous_timestamp.strftime('%m-%d'), previous_timestamp.strftime('%H'))
-
-            print(current_hour)
-
-            while True:
-                try:
-                    timestamp, row = next(row_iterator)
-                except StopIteration:
-                    break
-
-                consumption_time = (timestamp.strftime('%m-%d'), timestamp.strftime('%H'))
-
-                if consumption_time != current_hour:
-                    last_record_of_previous_hour = (timestamp, row)
-                    break
-
-                if(self.phases_data_frame.index.freq.freqstr == 'h'):
-                    delta_seconds = 3600
-                else:
-                    delta_seconds = (timestamp - previous_timestamp).total_seconds()
-                time_of_power_exertion = delta_seconds / 3600  # Convert to hours for energy calculation
-
-                """
-                In power_delta, we store the difference between the generated power and the consumed power.
-                If the value is - positive, the system generated more power than it consumed.
-                                - negative, the system consumed more power than it generated.
-                """
-                self.process_record_off_grid(
-                    timestamp, row, current_generated_power,
-                    time_of_power_exertion, max_single_phase_ratio,
-                    asymetric_inverter, phases_count,
-                    battery_min_capacity, battery_max_capacity,
-                    cant_convert_from_battery, previous_timestamp
-                    )
-                previous_timestamp = timestamp
-                
-            if last_record_of_previous_hour:
-                last_timestamp, last_row = last_record_of_previous_hour
-                last_consumption_time = (last_timestamp.strftime('%m-%d'), last_timestamp.strftime('%H'))
-
-                if last_consumption_time != current_hour:
-                    # Calculate the delta_seconds and time_of_power_exertion for the last record
-                    delta_seconds = (last_timestamp - previous_timestamp).total_seconds()
-                    time_of_power_exertion = delta_seconds / 3600
-
-                self.process_record_off_grid(last_timestamp, last_row, current_generated_power,
-                                            time_of_power_exertion, max_single_phase_ratio,
-                                            asymetric_inverter, phases_count,
-                                            battery_min_capacity, battery_max_capacity,
-                                            cant_convert_from_battery, previous_timestamp)
-                previous_timestamp = timestamp
-                
-        self.energy_data_df = pd.DataFrame(self.data_to_plot)
-        self.blackout_data_df = pd.DataFrame(self.blackout_data)
-
-    def process_energy_3_phases_on_grid_with_battery(self, selling_enabled=True, phases_count=3,asymetric_inverter = False,max_single_phase_ratio=0.5):
-        """
-        Process energy for 3 phases on the grid with a battery and generation data.
-
-        Args:
-            selling_enabled (bool, optional): Flag indicating whether selling excess energy is enabled. Defaults to True.
-            phases_count (int, optional): Number of phases in the system.
-            asymetric_inverter (bool, optional): Whether the inverter is asymetric.
-            max_single_phase_ratio (float, optional): Max power percentage per phase for asymetric inverters.
-        """
-        
-        # Define battery parameters
-        battery_min_capacity, battery_max_capacity = self.set_battery_operational_range()
-
-        row_iterator = self.phases_data_frame.iterrows()
-
-        self.data_to_plot = {'timestamp': [],
-            **{f'power_generated_phase_{i}': [] for i in range(1, phases_count + 1)},
-            **{f'power_need_phase_{i}': [] for i in range(1, phases_count + 1)},
-            **{f'power_delta_phase_{i}': [] for i in range(1, phases_count + 1)},
-                'power_need_all_phases': []}
-
-        """
-                Here we have to work with DC power, because we are going to store the energy in the battery
-                and then we have to convert it back to AC power.
-                We will also work with the battery loader which has some efficiency, so we have to account for that.
-        """
-        last_record_of_previous_hour = None
-        previous_timestamp = None
-
-        for index, current_generated_power in self.dc_generation_df.items():
-            
-            # Extract the month, day, and hour from the generation line
-            current_hour = (index.strftime('%m-%d'), index.strftime('%H'))
-            
-            """
-            Limiting the generated power to the invertor nominal threshold.
-            """
-            current_generated_power, cant_convert_from_battery = self.limit_power_to_invertor_threshold(current_generated_power, with_battery=True)
-
-            # setting previous_timestamp as first record of the next hour
-            # then when jumping to the cycle we already have set previous timestamp and current timestamp
-            # based on that we can compute the time delta (interval) of the time, the power was exerting
-            # and from that get the energy = time * power
-
-            if previous_timestamp is None: # if we are at the beginning of the data
-                try:
-                    previous_timestamp, row = next(row_iterator)
-                except StopIteration:
-                    break
-            
-            # this is when we have earlier data of consumption than the generation data
-            while current_hour > (previous_timestamp.strftime('%m-%d'), previous_timestamp.strftime('%H')):
-                try:
-                    previous_timestamp, row = next(row_iterator)
-                except StopIteration:
-                    break
-                
-
-            consumption_time = (previous_timestamp.strftime('%m-%d'), previous_timestamp.strftime('%H'))
-
-            print(current_hour)
-
-            while True:
-                try:
-                    timestamp, row = next(row_iterator)
-                except StopIteration:
-                    break
-
-                consumption_time = (timestamp.strftime('%m-%d'), timestamp.strftime('%H'))
-
-                if consumption_time != current_hour:
-                    last_record_of_previous_hour = (timestamp, row)
-                    break
-
-                if(self.phases_data_frame.index.freq.freqstr == 'h'):
-                    delta_seconds = 3600
-                else:
-                    delta_seconds = (timestamp - previous_timestamp).total_seconds()
-                time_of_power_exertion = delta_seconds / 3600  # Convert to hours for energy calculation
-
-                """
-                In power_delta, we store the difference between the generated power and the consumed power.
-                If the value is - positive, the system generated more power than it consumed.
-                                - negative, the system consumed more power than it generated.
-                """
-                """
-                Here we have to work with DC power, because we are going to store the energy in the battery
-                and then we have to convert it back to AC power.
-                We will also work with the battery loader which has some efficiency, so we have to account for that.
-                """
-
-                self.process_record_with_battery(
-                    timestamp, row, current_generated_power,
-                    time_of_power_exertion, selling_enabled,
-                    max_single_phase_ratio, asymetric_inverter,
-                    phases_count, battery_min_capacity, battery_max_capacity,
-                    cant_convert_from_battery, previous_timestamp
-                )
-                previous_timestamp = timestamp
-
-            if last_record_of_previous_hour:
-                last_timestamp, last_row = last_record_of_previous_hour
-                last_consumption_time = (last_timestamp.strftime('%m-%d'), last_timestamp.strftime('%H'))
-
-                if last_consumption_time != current_hour:
-                    # Calculate the delta_seconds and time_of_power_exertion for the last record
-                    delta_seconds = (last_timestamp - previous_timestamp).total_seconds()
-                    time_of_power_exertion = delta_seconds / 3600
-
-                    self.process_record_with_battery(
-                        last_timestamp, last_row, current_generated_power,
-                        time_of_power_exertion, selling_enabled,
-                        max_single_phase_ratio, asymetric_inverter,
-                        phases_count, battery_min_capacity, battery_max_capacity,
-                        cant_convert_from_battery, previous_timestamp
-                    )
-                    previous_timestamp = timestamp
-
-        self.energy_data_df = pd.DataFrame(self.data_to_plot)
-
-    def off_grid_energy_processing(self, phases_count=3):
-        """
-        Process the off-grid energy generation and consumption data.
-
-        Args:
-            phases_count (int): The number of phases in the system. Defaults to 3.
-
-        Returns:
-            None
-        """
-        with open(self.consumption_file, 'r') as consumption_csv, open(self.dc_generation_file, 'r') as generation_csv:
-           #consumption_reader = csv.reader(consumption_csv)
-            generation_reader = csv.reader(generation_csv)
-
-            # Skip headers if present
-            #next(consumption_reader, None)
-            next(generation_reader, None)
-            
-            # Define battery parameters
-            battery_min_capacity, battery_max_capacity = self.set_battery_operational_range()
-
-
-            previous_timestamp = None
-            blackout_is_already = False
-            blackout_start = None
-            blackout_end = None
-
-            delta_seconds = 5  # typical delta
-            max_generated_power_per_phase = self.invertor_threshold / phases_count
-            row_iterator = self.phases_data_frame.iterrows()
-
-            def blackout():
-                nonlocal blackout_is_already, blackout_start, blackout_end
-                if(energy_delta[phase] > 0):
-                    if blackout_is_already == False:
-                        print("Blackout start")
-                        blackout_start = timestamp
-                        blackout_is_already = True
-                    else:
-                        #prolong the blackout
-                        blackout_end = timestamp
-
-            def blackout_end_check():
-                nonlocal blackout_is_already, blackout_start, blackout_end
-                if blackout_is_already == True:
-                    print("Blackout end")
-                    self.log_blackout(blackout_data, blackout_start, end_time=timestamp)
-                    blackout_is_already = False
-
-            data_to_plot = {'timestamp': [],
-                            'power_generated_per_phase': [],
-                            **{f'power_need_phase_{i}': [] for i in range(1, phases_count + 1)},
-                            **{f'power_delta_phase_{i}': [] for i in range(1, phases_count + 1)},
-                             'power_need_all_phases': []}
-            
-            blackout_data = {'timestamp_start': [], 'timestamp_end': [], 'duration': []}
-
-            for generation_line in generation_reader:
-                # Extract the month, day, and hour from the generation line
-                current_hour = (generation_line[0][5:10], generation_line[0][11:13])
-                current_generated_power = float(generation_line[1])
-                cant_convert_from_battery = False
-                """
-                Limiting the generated power to the invertor nominal threshold.
-                The power coming to the inverter is evenly distributed across the three phases.
-                """
-                if(current_generated_power >= self.invertor_threshold):
-                    self.wasted_excess_energy += (current_generated_power - self.invertor_threshold)
-                    current_generated_power = self.invertor_threshold
-                    cant_convert_from_battery = True
-
-                current_generated_power_per_phase = current_generated_power / phases_count
-                
-                # setting previous_timestamp as first record of the next hour
-                # then when jumping to the cycle we already have set previous timestamp and current timestamp
-                # based on that we can compute the time delta (interval) of the time, the power was exerting
-                # and from that get the energy = time * power
-
-                try:
-                    previous_timestamp, row = next(row_iterator)
-                except StopIteration:
-                    break
-
-                consumption_time = (previous_timestamp.strftime('%m-%d'), previous_timestamp.strftime('%H'))
-                print(current_hour)
-
-                while consumption_time == current_hour:
-                    try:
-                        if(self.phases_data_frame.index.freq.freqstr == 'h'):
-                            timestamp = previous_timestamp
-                        else:
-                            timestamp, row = next(row_iterator)
-                    except StopIteration:
-                        break
-
-                    consumption_time = (timestamp.strftime('%m-%d'), timestamp.strftime('%H'))
-
-                    if consumption_time != current_hour:
-                        break
-
-                    if(self.phases_data_frame.index.freq.freqstr == 'h'):
-                        delta_seconds = 3600
-                    else:
-                        delta_seconds = (timestamp - previous_timestamp).total_seconds()
-                    time_of_power_exertion = delta_seconds / 3600  # Convert to hours for energy calculation
-
-                    """
-                    In power_delta, we store the difference between the generated power and the consumed power.
-                    If the value is - positive, the system generated more power than it consumed.
-                                    - negative, the system consumed more power than it generated.
-                    """
-                    power_delta = {}
-                    energy_delta = {}
-                    momentary_energy_consumed_all_phases_with_PV = 0
-                    momentary_energy_consumed_all_phases_no_PV = 0
-                    energy_need_all_phases_no_PV = 0
-
-                    data_to_plot['timestamp'].append(previous_timestamp)  # or any appropriate timestamp
-                    data_to_plot['power_generated_per_phase'].append(current_generated_power_per_phase)
-                    data_to_plot['power_need_all_phases'].append(row['phase_1'] + row['phase_2'] + row['phase_3'])
-
-                    """
-                    Here we have to work with DC power, because we are going to store the energy in the battery
-                    and then we have to convert it back to AC power.
-                    We will also work with the battery loader which has some efficiency, so we have to account for that.
-                    """
-                    
-                    for phase in range(1, phases_count+1):
-                        # computing needed DC to get equivalent of AC on the phase after accounting inverter efficiency
-                        power_delta[phase] = current_generated_power_per_phase - (row[f'phase_{phase}']/ self.inv_eff) 
-                        momentary_energy_consumed_all_phases_no_PV += row[f'phase_{phase}'] * time_of_power_exertion # Stat variable, converting to energy E= P*delta(t)
-                        energy_delta[phase] = power_delta[phase] * time_of_power_exertion # Convert power to energy (based on the time delta)
-
-                        data_to_plot[f'power_need_phase_{phase}'].append(row[f'phase_{phase}'])
-                        data_to_plot[f'power_delta_phase_{phase}'].append(power_delta[phase])
-                
-                        # in DC power
-                        if energy_delta[phase] > 0:  # generated energy is higher than consumed energy
-
-                            blackout_end_check()
-
-                            # If adding the excess to the battery keeps it within its operational range
-                            if (self.battery_current_storage + energy_delta[phase]) < battery_max_capacity and (self.battery_current_storage + energy_delta[phase]) > battery_min_capacity:
-                                self.battery_current_storage += energy_delta[phase]
-                                self.wasted_excess_energy_phase[phase-1].append(self.wasted_excess_energy_phase[phase-1][-1])  # No energy is wasted
-                                energy_delta[phase] = 0  # The battery successfully stores all excess, no energy excess
-
-                            elif (self.battery_current_storage + energy_delta[phase]) < battery_min_capacity:
-                                self.battery_current_storage += current_generated_power_per_phase * time_of_power_exertion  # Charge the battery with all generated energy (after accounting for the battery loader efficiency)
-                                self.wasted_excess_energy_phase[phase-1].append(self.wasted_excess_energy_phase[phase-1][-1])  # No energy is wasted but we keep track of it
-                                energy_delta[phase] = row[f'phase_{phase}'] * time_of_power_exertion  # Assume all consumed energy is drawn from the grid
-
-
-                            elif(self.battery_current_storage + energy_delta[phase]) > battery_max_capacity: # if the battery is full
-                                    # Add the new value to the last value in the list
-                                    self.wasted_excess_energy_phase[phase-1].append(self.wasted_excess_energy_phase[phase-1][-1] + abs(energy_delta[phase])) #DC
-                                    self.wasted_excess_energy_points_list.append((energy_delta[phase])) #DC
-                                    self.wasted_excess_energy += abs(energy_delta[phase]) # DC
-                                    energy_delta[phase] = 0 # energy was  
-                        
-                        if energy_delta[phase] < 0:  # consumed energy is higher than generated energy on the given phase
-                            """
-                            Here we have to check if the battery has enough energy to cover the deficit and stay above its minimum capacity
-                            Also we have to check if the invertor can take anymore power from battery to cover the deficit, if not, we have to take the energy from the grid
-                            That is done here in the following if-else statement
-                            """
-                            energy_delta[phase] = abs(energy_delta[phase])  # Convert the result to positive for easier calculations
-
-                            if self.battery_current_storage >= (battery_min_capacity + energy_delta[phase]) and cant_convert_from_battery is False: # if the battery has enough energy to cover the deficit and stay above its minimum capacity
-                                
-                                maximum_energy_to_use_from_battery =  (max_generated_power_per_phase - current_generated_power_per_phase) * time_of_power_exertion
-                                
-                                if energy_delta[phase] < maximum_energy_to_use_from_battery:
-
-                                    if blackout_is_already == True:
-                                        blackout_end = timestamp
-                                        self.log_blackout(blackout_data, blackout_start, blackout_end)
-                                        blackout_is_already = False
-                                
-                                    self.battery_current_storage -= energy_delta[phase]
-                                    energy_delta[phase] = 0 # No additional energy is needed from the grid
-                                else:
-                                    self.battery_current_storage -= maximum_energy_to_use_from_battery
-                                    #here we should track the unavailableness of the system
-                                    energy_delta[phase] = energy_delta[phase] - maximum_energy_to_use_from_battery
-                                
-                                # Here I should add generated energy not used?
-                                # wasted_excess_energy_phase is for tracking energy that is available from battery and solars, but cant be used thx to invertor 
-                                # USE MAYBE JUST FOR SOLAR ENERGY UNUSED
-                                self.wasted_excess_energy_phase[phase-1].append(self.wasted_excess_energy_phase[phase-1][-1] + energy_delta[phase])
-                            
-                            blackout()
-
-                            # track the energy consumed from the grid even when it is blackout?
-                            momentary_energy_consumed_all_phases_with_PV += energy_delta[phase]/self.inv_eff # convert back to AC
-
-                        self.battery_storage_list.append(self.battery_current_storage)
-                    
-                    self.total_consumed_energy_with_PV += momentary_energy_consumed_all_phases_with_PV  # Add the net energy used (or surplus if negative) to the total
-                    self.total_consumed_energy_without_PV += momentary_energy_consumed_all_phases_no_PV  # Track total energy consumption without considering PV generation at all
-                    
-                    # Add data to lists for plotting
-                    self.consumed_energy_list.append(momentary_energy_consumed_all_phases_no_PV)
-                    self.momentary_energy_consumption_without_PV.append((timestamp, momentary_energy_consumed_all_phases_no_PV))
-                    self.wasted_excess_energy_list.append(self.wasted_excess_energy)
-                    self.momentary_energy_used_from_grid_list.append(momentary_energy_consumed_all_phases_with_PV)
-                    self.total_energy_used_from_grid_list.append(self.total_consumed_energy_with_PV)
-                    #self.battery_storage_list.append(self.battery_current_storage)
-                        
-                    previous_timestamp = timestamp
-
-            
-            self.energy_data_df = pd.DataFrame(data_to_plot)
-            self.blackout_data_df = pd.DataFrame(blackout_data)
-
-    def process_energy_with_battery(self, selling_enabled=True):
-        with open(self.consumption_file, 'r') as consumption_csv, open(self.dc_generation_file, 'r') as generation_csv:
-            consumption_reader = csv.reader(consumption_csv)
-            generation_reader = csv.reader(generation_csv)
-
-            # Skip headers if present
-            next(consumption_reader, None)
-            next(generation_reader, None)
-            
-            # Define battery parameters
-            battery_min_capacity, battery_max_capacity = self.set_battery_operational_range()
-
-            previous_timestamp = None
-            delta_seconds = 5  # typical delta
-
-            # Iterate through the lines
-            for generation_line in generation_reader:
-                # Extract the month, day, and hour from the generation line
-                current_hour = (generation_line[0][5:10], generation_line[0][11:13])
-                generated_energy_hourly = float(generation_line[1])
-
-                # Limit the generated power to the invertor power threshold (here using energy variable, because it is the same power supplied for the whole hour)
-                if(generated_energy_hourly > self.invertor_threshold):
-                    generated_energy_hourly = self.invertor_threshold
-
-                #tady by šla dát podmínka, kdy když je gen energie 0, tak ještě pronásobím baterii samovybíjením pokuď je větší než 0
-
-                try: 
-                    consumption_line = next(consumption_reader)
-                    previous_timestamp = datetime.strptime(consumption_line[0], '%Y-%m-%d %H:%M:%S')
-                except StopIteration:
-                    break  # No more consumption data
-                
-                # Extract the month, day, and hour from the consumption line
-                consumption_time = (consumption_line[0][5:10], consumption_line[0][11:13])
-                print(current_hour)
-                line_to_read = 0
-                # Process the corresponding consumption data
-                while consumption_time == current_hour: 
-                    try: 
-                        consumption_line = next(consumption_reader)
-                        timestamp = datetime.strptime(consumption_line[0], '%Y-%m-%d %H:%M:%S')
-                    except StopIteration:
-                        break  # No more consumption data
-
-                    # Extract the month, day, and hour from the consumption line
-                    consumption_time = (consumption_line[0][5:10], consumption_line[0][11:13])
-
-                    # Check if the consumption line and generation line have the same month, day, and hour
-                    if consumption_time != current_hour:
-                        break 
-                    #print(consumption_time)
-
-                    delta_seconds = (timestamp - previous_timestamp).total_seconds()
-                    energy_for_current_record_dc = (delta_seconds / 3600) * generated_energy_hourly
-
-                    # Process the consumption data
-                    consumed_energy = float(consumption_line[1]) * 1000  # kW to W
-                    #print(f"Consumed energy: {consumed_energy}, Generated energy: {generated_energy}")
-                    print(delta_seconds, energy_for_current_record_dc, consumed_energy, current_hour)
-
-                    # Calculate the result of the operation
-                    estimated_dc_consumed_energy = consumed_energy/self.inv_eff # DC energy after accounting inverter efficiency
-                    result = estimated_dc_consumed_energy - energy_for_current_record_dc
-                        
-                    if result > 0:  # consumed energy is higher than generated energy
-                        # If the battery has enough energy to cover the deficit and stay above its minimum capacity 
-                        # (after accounting for the inverter efficiency)
-                        if self.battery_current_storage >= (battery_min_capacity + result):
-                            self.battery_current_storage -= result # Use the needed energy from the battery to cover the deficit (after accounting for the inverter efficiency)
-                            result = 0  # No additional energy is needed from the grid
-
-                        # now we cover the consumption prior to storing the energy
-                        #else: #todo: posílat do baterie místo na spotřebu? udělat z toho experiment? možná to tam posílat když je baterie vybitá pod min. kapacitu
-                            #result = consumed_energy  # The deficit is too large, use grid energy for the remainder
-                            #self.battery_current_storage += energy_for_current_record/self.inv_eff * 0.96  # Charge the battery with all generated energy (after accounting for the battery loader efficiency)
-
-                    # here comes the process of dividing the energy to the consumption and the battery storage and selling the rest
-                    elif result < 0:  # generated energy is higher than consumed energy
-                        
-                        result = abs(result)  # Convert the result to positive for easier calculations
-                        
-                        # If adding the excess to the battery keeps it within its operational range
-                        if (self.battery_current_storage + result) < battery_max_capacity and (self.battery_current_storage + result) > battery_min_capacity:
-                            self.battery_current_storage += result  # Store the excess energy in the battery
-                            result = 0  # The battery successfully stores all excess, no energy sold back
-                        
-                        # If adding the excess would not reach the minimum capacity, indicating the battery is nearly depleted
-                        # the house has priority in energy consumption, but not in this case, we don't want to destroy the battery in getting it under DOD, so we charge it
-                        elif (self.battery_current_storage + result) < battery_min_capacity:
-                            self.battery_current_storage += energy_for_current_record_dc  # Charge the battery with the generated energy in DC
-                            result = consumed_energy  # Assume all consumed energy is drawn from the grid
-                        
-                        # If adding the excess would exceed the battery's maximum capacity
-                        elif (self.battery_current_storage + result) > battery_max_capacity:
-                            if selling_enabled:
-                                self.energy_sold += result*self.inv_eff  # Sell the excess energy back to the grid (after accounting for the inverter efficiency to the AC)
-                            result = 0  # The system cannot store excess energy, but also doesn't need energy from the grid
-
-                    # If the result is negative after adjustments, indicating an issue with data or assumptions
-                    if result < 0:
-                        self.bad_data_count += 1  # Increment the count of such occurrences
-
-                    self.total_consumed_energy_with_PV += result  # Add the net energy used (or surplus if negative) to the total
-                    self.total_consumed_energy_without_PV += consumed_energy  # Track total energy consumption without considering PV generation
-                    
-                    # Add data to lists
-                    self.consumed_energy_list.append(consumed_energy)
-                    self.battery_storage_list.append(self.battery_current_storage)
-                    self.momentary_energy_used_from_grid_list.append(result)
-                    self.total_energy_used_from_grid_list.append(self.total_consumed_energy_with_PV)
-                    
-                    # Check if the current battery storage is the maximum
-                    #if self.battery_current_storage > self.max_battery_storage:
-                    #    self.max_battery_storage = self.battery_current_storage
-                    line_to_read+=1
-                    previous_timestamp = timestamp
-
-            prize = (self.total_consumed_energy_with_PV/1000 * self.cost_per_kWh)
-        return prize
-    
-    def process_energy_without_battery(self):
-        with open(self.consumption_file, 'r') as consumption_csv, open(self.ac_generation_file, 'r') as generation_csv:
-            consumption_reader = csv.reader(consumption_csv)
-            generation_reader = csv.reader(generation_csv)
-
-            # Skip headers if present
-            next(consumption_reader, None)
-            next(generation_reader, None)
-                
-            previous_timestamp = None
-            delta_seconds = 5  # typical delta
-
-            # Iterate through the lines
-            for generation_line in generation_reader:
-                # Extract the month, day, and hour from the generation line
-                current_hour = (generation_line[0][5:10], generation_line[0][11:13])
-                generated_energy_hourly = float(generation_line[1])
-
-                try: 
-                    consumption_line = next(consumption_reader)
-                    previous_timestamp = datetime.strptime(consumption_line[0], '%Y-%m-%d %H:%M:%S')
-                except StopIteration:
-                    break  # No more consumption data
-                
-                # Extract the month, day, and hour from the consumption line
-                consumption_time = (consumption_line[0][5:10], consumption_line[0][11:13])
-                print(current_hour)
-                line_to_read = 0
-                # Process the corresponding consumption data
-                while consumption_time == current_hour: 
-                    try: 
-                        consumption_line = next(consumption_reader)
-                        timestamp = datetime.strptime(consumption_line[0], '%Y-%m-%d %H:%M:%S')
-                    except StopIteration:
-                        break  # No more consumption data
-
-                    # Extract the month, day, and hour from the consumption line
-                    consumption_time = (consumption_line[0][5:10], consumption_line[0][11:13])
-
-                    # Check if the consumption line and generation line have the same month, day, and hour
-                    if consumption_time != current_hour:
-                        break 
-                    #print(consumption_time)
-
-                    delta_seconds = (timestamp - previous_timestamp).total_seconds()
-                    energy_for_current_record = (delta_seconds / 3600) * generated_energy_hourly
-
-                    # Process the consumption data
-                    consumed_energy = float(consumption_line[1]) * 1000  # kW to W
-                    #print(f"Consumed energy: {consumed_energy}, Generated energy: {generated_energy}")
-                    print(delta_seconds, energy_for_current_record, consumed_energy, current_hour)
-
-                    # Calculate the result of the operation
-                    result = consumed_energy - energy_for_current_record
-                        
-                    if result < 0:  # generated energy is higher than consumed energy
-                        self.energy_sold += abs(result)  # Sell the excess energy back to the grid
-                        result = 0
-
-                    # If the result is negative after adjustments, indicating an issue with data or assumptions
-                    if result < 0:
-                        self.bad_data_count += 1  # Increment the count of such occurrences
-
-                    self.total_consumed_energy_with_PV += result  # Add the net energy used (or surplus if negative) to the total
-                    self.total_consumed_energy_without_PV += consumed_energy  # Track total energy consumption without considering PV generation
-                    
-                    # Add data to lists
-                    self.consumed_energy_list.append(consumed_energy)
-                    self.momentary_energy_used_from_grid_list.append(result)
-                    self.total_energy_used_from_grid_list.append(self.total_consumed_energy_with_PV)
-                    
-                    line_to_read+=1
-                    previous_timestamp = timestamp
-            
-            prize = (self.total_consumed_energy_with_PV/1000 * self.cost_per_kWh)

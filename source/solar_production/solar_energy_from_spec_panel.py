@@ -3,8 +3,8 @@
 @brief This file contains the SolarEnergyCalculator class, which is responsible for calculating the solar energy output of a photovoltaic system.
 @Author: Adam Gabrys
 
-NOTE: many functions are using the pvlib library, which is a Python library for simulating the performance of photovoltaic energy systems.
-
+this module and some of its functions is using pvlib library, which is a Python library for simulating the performance of photovoltaic energy systems.
+If you would want to see the documentation of the library, see https://pvlib-python.readthedocs.io/en/stable/reference/index.html to understand physics behind some of the calculations.
 """
 import pvlib
 import os
@@ -673,7 +673,7 @@ class SolarEnergyCalculator:
         plt.tight_layout()
         plt.show()
             
-    def plot_configurations(self):
+    def plot_configurations(self, language='english'):
         """
         Plots the power output of different configurations of solar panels.
 
@@ -682,7 +682,7 @@ class SolarEnergyCalculator:
         the date. If there is only one configuration, the subplot is wrapped in a list.
 
         Parameters:
-        None
+        language (str): The language to use for labels and comments. Supported values are 'english' and 'czech'.
 
         Returns:
         None
@@ -697,14 +697,26 @@ class SolarEnergyCalculator:
         if num_configs == 1:
             axes = [axes]
         
+        # Define labels and comments in both languages
+        labels = {
+            'english': {
+                'power_output': 'DC Power Output (W)',
+                'date': 'Date'
+            },
+            'czech': {
+                'power_output': 'Výstupní výkon DC (W)',
+                'date': 'Datum'
+            }
+        }
+
         for ax, (label, output) in zip(axes, self.dc_outputs.items()):
             output.plot(ax=ax, label=label, color='tab:blue')
             ax.set_title(label)
-            ax.set_ylabel('DC Power Output (W)', fontsize=12)
+            ax.set_ylabel(labels[language]['power_output'], fontsize=16)
             ax.legend()
 
         # Set a common X label
-        axes[-1].set_xlabel('Date', fontsize=14)
+        axes[-1].set_xlabel(labels[language]['date'], fontsize=16)
 
         plt.tight_layout()
         plt.show()

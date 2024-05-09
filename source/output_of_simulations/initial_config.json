@@ -2,8 +2,8 @@
     "arguments": {
         "with_battery": false,
         "off_grid": false,
-        "handle_low_tariff": false,
-        "selling_enabled": false,
+        "handle_low_tariff": true,
+        "selling_enabled": true,
         "max_blackout_days": 365
     },
     "panel_configuration": [
@@ -36,7 +36,7 @@
         "_comment": "https://www.tipa.eu/cz/baterie-agm-12v-200ah-solarfam-pro-solary/d-244759/?gad_source=1 cited 2023-04-26"
     },
     "inverter_configuration": {
-        "size": 10000,
+        "nominal_power": 10000,
         "efficiency": 0.97,
         "cost": 65049,
         "default": true,
@@ -49,8 +49,8 @@
     "other_settings": {
         "battery_included": false,
         "off_grid": false,
-        "handle_low_tariff": false,
-        "selling_enabled": false,
+        "handle_low_tariff": true,
+        "selling_enabled": true,
         "max_blackout_days": 365
     },
     "prizing_energy_and_cost": {

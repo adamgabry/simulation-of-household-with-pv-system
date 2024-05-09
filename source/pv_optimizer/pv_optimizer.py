@@ -1,9 +1,14 @@
+"""
+@file: pv_optimizer.py
+@Author: Adam Gabrys
+@Description: This module contains the PV_Optimizer class, which is responsible for optimizing the PV system configuration.
+"""
+
 import numpy as np
 import pandas as pd
 from functools import partial
 from energy_processing.energy_data_processor import EnergyDataProcessor
 from solar_production.solar_energy_from_spec_panel import SolarEnergyCalculator
-from itertools import product
 from deap import base, creator, tools, algorithms
 import random
 
@@ -90,7 +95,6 @@ class  PVOptimizer:
             self.setup_toolbox_with_battery(panel_configurations_list, battery_sizes)
         else:
             self.setup_toolbox_without_battery(panel_configurations_list)
-        self.test()
 
     def calculate_current_savings_per_year(self):
             #NOTE here can be added the low and high tariff for the energy computation
@@ -267,6 +271,7 @@ class  PVOptimizer:
 
         if self.battery_changes >= max_cycles:
             print(f"ROI calculation stopped after {max_cycles} cycles due to not making an investment return.")
+            years = 1000
             return years
         
         print("Battery changes done:", self.battery_changes)
@@ -388,7 +393,7 @@ class  PVOptimizer:
          - inverter_config: The current inverter configuration.
          - panel_configurations: List of panel configurations.
         """
-        self.solar_calculator.invertor_threshold = inverter_config['size']
+        self.solar_calculator.invertor_threshold = inverter_config['nominal_power']
         self.solar_calculator.invertor_efficiency = inverter_config['efficiency']
         self.solar_calculator.array_configs = panel_configurations
         self.solar_calculator.run_in_optimizer()
@@ -409,7 +414,7 @@ class  PVOptimizer:
         self.processor.reset_data()
         self.processor.dc_generation_df = self.solar_calculator.total_dc_output
         self.processor.ac_generation_df = self.solar_calculator.total_ac_output
-        self.processor.invertor_threshold = inverter_config['size']
+        self.processor.invertor_threshold = inverter_config['nominal_power']
         self.processor.asymetric_inverter = inverter_config.get('asymetric', False)
         self.processor.max_single_phase_ratio = inverter_config.get('max_single_phase_ratio', 0.4)
         self.processor.inv_eff = inverter_config['efficiency']
@@ -441,6 +446,17 @@ class  PVOptimizer:
             return years_of_ROI
 
     def run_genetic_algorithm(self, ngen=10, pop_size=30):
+        """
+        Runs the genetic algorithm for optimizing the PV power plant configuration.
+
+        Parameters:
+        - ngen (int): Number of generations to run the algorithm for. Default is 10.
+        - pop_size (int): Size of the population. Default is 30.
+
+        Returns:
+        - best_configuration (tuple): Best configuration found by the algorithm.
+        - fitness_values (tuple): Fitness values of the best individual.
+        """
         pop = self.create_initial_population(pop_size)
         hof = tools.HallOfFame(1)
 
@@ -599,7 +615,6 @@ class  PVOptimizer:
         # Filter hybrid inverters only
         hybrid_inverters = [inv for inv in self.invertor_configs if inv.get('hybrid', False)]
         self.toolbox.register("attr_inverter_config", random.choice, hybrid_inverters)
-        #self.toolbox.register("attr_inverter_config", random.choice, self.invertor_configs)
 
         # Attribute generators for the number of strings and modules per string for each panel configuration.
         for index_in_config, config in enumerate(panel_configurations_list):
@@ -716,12 +731,15 @@ class  PVOptimizer:
 
         current_savings_per_year = self.calculate_current_savings_per_year()
         savings_list = []
-        print(f'Cost of investment beffore accounting for annual expenses: {total_cost}')
+        print(f'Cost of investment: {total_cost}')
 
         total_savings = 0.0
         years = 0.0
 
         while total_cost > total_savings:
+            if current_savings_per_year <= 0:
+                years = 1000
+                break
             if total_savings + current_savings_per_year > total_cost:
                 # Calculate the fraction of the year_number needed for the remaining savings
                 fraction_year = (total_cost - total_savings) / current_savings_per_year
@@ -734,7 +752,6 @@ class  PVOptimizer:
             if total_savings >= total_cost:
                 break
         
-        print("Total cost after accounting annual expenses:", total_cost)
         return years
 
     def print_best_config_off_grid(self, ddf, max_blackout_days):
@@ -760,7 +777,7 @@ class  PVOptimizer:
             print('If you want to achieve desired maximal amount of blackout days, you need to try these steps:')
             print('1. Increase the battery size.')
             print('2. Increase the maximal number of panels.')
-            print('3. Increase the inverter size.')
+            print('3. Increase the inverter nominal power.')
             return min_blackout_days_row
 
     def run_best_config(self, config):
@@ -827,16 +844,17 @@ class  PVOptimizer:
         return new_roi < original_roi
 
     def set_config_to_off_grid_config(self, row):
+        """
+        Sets the configuration values for an off-grid system based on the given row.
+
+        Args:
+            row (pandas.Series): The row containing the configuration values.
+
+        Returns:
+            list: The off-grid configuration values in the format [panel_config, battery_size, inverter_config].
+        """
         config = [None, None, None]
         config[0] = row['Panel configuration']
         config[1] = row['Battery Size']
         config[2] = row['Inverter config']
         return config
-
-### UNUSED METHODS
-
-    def test(self):
-        individual = self.toolbox.individual()
-        print("Before mutation:", individual)
-        self.toolbox.mutate(individual)
-        print("After mutation:", individual)

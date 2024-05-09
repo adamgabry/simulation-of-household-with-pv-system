@@ -1,3 +1,8 @@
+"""
+@Author: Adam Gabrys
+@Description: A class that provides methods for setting default values and loading JSON configurations.
+"""
+
 import json
 import os
 import pandas as pd

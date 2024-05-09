@@ -1,3 +1,8 @@
+"""
+@author: Adam Gabrys
+@Description: This file contains the main simulation logic of running the photovoltaics for household microgrid simulation.
+"""
+
 from functools import partial
 import os
 import pandas as pd
@@ -131,6 +136,7 @@ class Simulation:
         self.location = self.configs['location_config']['location']
         
         self.database_config = self.configs['database_config']['database_config']
+        self.query = self.database_config['db_query']
         self.consumption_db_path = self.database_config['consumption_db_path']
         self.WeatherUnderground_path = self.database_config['WeatherUnderground_path']
         self.consumption_sensors = self.database_config['sensor_ids']
@@ -175,7 +181,7 @@ class Simulation:
                 (self.consumption_sensors['first_phase'], 
                     self.consumption_sensors['second_phase'], 
                     self.consumption_sensors['third_phase']),
-                query="SELECT state_id, attributes_id, state, last_updated_ts FROM states WHERE attributes_id IN ? ORDER BY state_id;",
+                query=self.query,
                 output_file='other/extracted_data_utc_all.csv'
             )
             print('Data extracted successfully')
@@ -185,7 +191,7 @@ class Simulation:
             for phase in ['first_phase', 'second_phase', 'third_phase']:
                 self.db_extractor.extract_data(
                     self.consumption_sensors[phase],
-                    query="SELECT state_id, attributes_id, state, last_updated_ts FROM states WHERE attributes_id IN ? ORDER BY state_id;",
+                    query=self.query,
                     output_file=f'other/extracted_data_utc_{phase}.csv'
                 )
 
@@ -241,11 +247,8 @@ class Simulation:
         Loads the full year data from a pickle file or falls back to a CSV file if necessary.
         Returns the DataFrame if successful, or None if not.
         """
-        #TODO add the extrapolated data use option
         file_path_pickle = 'consumption_data/full_year_df.pkl'
-        #file_path_pickle = 'consumption_data/df_resampled.pkl'
         file_path_csv = 'consumption_data/full_year_df.csv'
-        #file_path_csv = 'consumption_data/df_resampled.csv'
         try:
             if os.path.exists(file_path_pickle):
                 return pd.read_pickle(file_path_pickle)
@@ -278,13 +281,12 @@ class Simulation:
         solar_calculator = SolarEnergyCalculator(
             latitude=self.location['latitude'],
             longitude=self.location['longitude'],
-            array_configs = self.panel_array_configs,
-            pvgis_poa=True, # for testing purposes when we allready have fetched TMY from PVGIS API    
+            array_configs = self.panel_array_configs,  
             start=f"{consumption_data_year}-01-01 00:00",
             end=f"{consumption_data_year}-12-31 23:00",
             input_csvs_file_path=self.WeatherUnderground_path,
             panel_info=self.current_panel_params,
-            invertor_threshold=self.current_inverter['size'],
+            invertor_threshold=self.current_inverter['nominal_power'],
             invertor_efficiency=self.current_inverter['efficiency'],
         )
         return solar_calculator
@@ -347,7 +349,8 @@ class Simulation:
     def visualize_energy_processor_data(self, processor):
         visualize_energy = input("Visualize graphs of energy data? (y/n): ").lower() == 'y'
         if visualize_energy:
-            processor.statistics_show()
+            processor.statistics_show(off_grid=self.off_grid)
+            processor.demo_plot_battery_state()
             processor.plot_phases_data()
             processor.plot_monthly_and_hourly_consumption(hours_only=True)
             processor.plot_monthly_and_hourly_consumption(months_only=True)
@@ -426,7 +429,7 @@ class Simulation:
                                     self.current_battery['type'],
                                     buying_cost_per_kWh=self.prizing_energy_and_cost['buying_cost_from_distributor_per_kwh'],
                                     selling_cost_per_kWh=self.prizing_energy_and_cost['selling_cost_to_distributor_per_kwh'],
-                                    invertor_threshold=self.current_inverter['size'],
+                                    invertor_threshold=self.current_inverter['nominal_power'],
                                     battery_info=self.battery_info,
                                     inverter_efficiency=self.current_inverter['efficiency'],
                                     phases_data_frame=consumption_data_df,
@@ -471,19 +474,18 @@ class Simulation:
         """for saving the best configuration of panels, batteries and inverters to json file"""
         configuration = {}
 
-        index_in_config = 0
-
-        if self.with_battery:
-            configuration['battery_after_optimization'] = individual[0]
-            index_in_config = 1
-
         configuration['panels_after_optimization'] = []
-        for i in range(index_in_config, len(individual) - 1, 2):
+        panel_configs = individual[0]  # Get the list of panel configurations
+        for config in panel_configs:
             configuration['panels_after_optimization'].append({
-                'strings': individual[i],
-                'modules_per_string': individual[i+1]
+                'surface_tilt': config['surface_tilt'],
+                'surface_azimuth': config['surface_azimuth'],
+                'strings': config['strings'],
+                'modules_per_string': config['modules_per_string']
             })
 
+        if self.with_battery:
+            configuration['battery_after_optimization'] = individual[-2]
         configuration['inverter_after_optimization'] = individual[-1]
 
         return configuration
@@ -541,7 +543,7 @@ class Simulation:
                     ngen = 10
                     pop_size = 20
                 else:
-                    ngen = 2
+                    ngen = 1
                     pop_size = 3
 
                 return ngen, pop_size
@@ -631,7 +633,7 @@ class Simulation:
             print("End of simulation.")
             return
 
-        # Downsampling the data to 30 minutes for optimalization
+        # Downsampling the data to 30 minutes for optimization
         resampled_consumption_data = consumption_data_df.resample('30min').mean()
         processor.phases_data_frame = resampled_consumption_data
 

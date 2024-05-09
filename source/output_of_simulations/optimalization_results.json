@@ -1,9 +1,9 @@
 {
-    "new_ROI": 9.996202167584956,
-    "original_ROI": 9.996202167584956,
-    "ROI_change": 0.0,
+    "new_ROI": 8.556923343726822,
+    "original_ROI": 8.801489032472197,
+    "ROI_change": 0.2445656887453751,
     "inverter_after_optimization": {
-        "size": 10000,
+        "nominal_power": 10000,
         "efficiency": 0.97,
         "cost": 65049,
         "default": true,
@@ -13,12 +13,13 @@
         "max_single_phase_ratio": 0.5,
         "_comment": "https://www.mobler.cz/menic-10kw-hybridni-3f-lemax-deye-sun10k-sg04lp3/?variantId=260565&gad_source=1 cited 1/5/2024"
     },
-    "battery_after_optimization": [
+    "battery_after_optimization": null,
+    "panels_after_optimization": [
         {
             "surface_tilt": 45,
             "surface_azimuth": 180,
             "strings": 2,
-            "modules_per_string": 8
+            "modules_per_string": 9
         },
         {
             "surface_tilt": 45,
@@ -27,33 +28,11 @@
             "modules_per_string": 4
         }
     ],
-    "panels_after_optimization": [
-        {
-            "strings": {
-                "type": "Plumbum",
-                "size": 9600,
-                "cost": 36000,
-                "default": true,
-                "_comment": "https://www.tipa.eu/cz/baterie-agm-12v-200ah-solarfam-pro-solary/d-244759/?gad_source=1 cited 2023-04-26"
-            },
-            "modules_per_string": {
-                "size": 10000,
-                "efficiency": 0.97,
-                "cost": 65049,
-                "default": true,
-                "hybrid": true,
-                "battery_loader_efficiency": 0.97,
-                "asymetric": true,
-                "max_single_phase_ratio": 0.5,
-                "_comment": "https://www.mobler.cz/menic-10kw-hybridni-3f-lemax-deye-sun10k-sg04lp3/?variantId=260565&gad_source=1 cited 1/5/2024"
-            }
-        }
-    ],
-    "time_of_optimization": 32.863953590393066,
-    "total_DC_energy_production": 9423.326986649008,
-    "total_energy_production": 9045.542490909647,
-    "consumed_energy_from_grid_without_PV": 6145.577922019111,
-    "consumed_energy_from_grid_with_PV": 1993.431880852779,
-    "energy_sold_to_grid": 0.0,
-    "blackout_days": 290
+    "time_of_optimization": 18.72947072982788,
+    "total_DC_energy_production": 10462.809785281554,
+    "total_energy_production": 10063.068554213321,
+    "consumed_energy_from_grid_without_PV": 6145.3646813871665,
+    "consumed_energy_from_grid_with_PV": 3320.795549432385,
+    "energy_sold_to_grid": 7238.499422258549,
+    "blackout_days": "N/A"
 }
