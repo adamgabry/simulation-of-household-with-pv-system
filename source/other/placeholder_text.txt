@@ -1,0 +1,1 @@
+This folder must exist but cant be commited on GitHub without contents, after cloning this repository, you can safely delete placeholder_text.txt file.
